@@ -1,0 +1,32 @@
+name: 自动合并免费订阅源
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'   # 每 6 小时自动跑一次（UTC）
+  workflow_dispatch:        # 支持随时手动点击运行
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 合并 24 个源并生成 sub.txt
+        run: node merge.mjs
+
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sub.txt
+          git diff --staged --quiet || git commit -m "auto: 更新合并订阅 $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          git push
